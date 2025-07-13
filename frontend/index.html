@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能学习助手 - 增强版</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .gradient-bg {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            position: relative;
+        }
+
+        .message-user {
+            background: var(--primary-gradient);
+            color: white;
+            margin-left: 2rem;
+            text-align: right;
+        }
+
+        .message-assistant {
+            background: white;
+            border: 1px solid #dee2e6;
+            margin-right: 2rem;
+        }
+
+        .session-info {
+            background: var(--success-gradient);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .quiz-container {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .quiz-option {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background: #f8f9fa;
+            border: 2px solid transparent;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quiz-option:hover {
+            background: #e9ecef;
+            border-color: #007bff;
+        }
+
+        .quiz-option.selected {
+            background: #cfe2ff;
+            border-color: #0d6efd;
+        }
+
+        .quiz-option.correct {
+            background: #d1e7dd;
+            border-color: #198754;
+        }
+
+        .quiz-option.incorrect {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online { background-color: #28a745; }
+        .status-offline { background-color: #dc3545; }
+        .status-warning { background-color: #ffc107; }
+
+        .session-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .session-item {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            background: #f8f9fa;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .session-item:hover {
+            background: #e9ecef;
+        }
+
+        .session-item.active {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .tab-content-area {
+            min-height: 600px;
+        }
+
+        .response-box {
+            background: white;
+            border-left: 4px solid #007bff;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0.375rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .model-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            border-radius: 1rem;
+            margin-left: 0.5rem;
+        }
+
+        .model-openai {
+            background: #10a37f;
+            color: white;
+        }
+
+        .model-deepseek {
+            background: #ff6b35;
+            color: white;
+        }
+
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg gradient-bg shadow">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-robot"></i> 智能学习助手 2.0
+            </a>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item">
+                    <span class="navbar-text" id="sessionStatus">
+                        <span class="status-indicator status-offline"></span>
+                        <span id="sessionId">未连接</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- 左侧边栏 -->
+            <div class="col-lg-3">
+                <div class="sidebar">
+                    <!-- 会话管理 -->
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-chat-dots"></i> 会话管理</span>
+                            <button class="btn btn-sm btn-outline-primary" onclick="newSession()">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="session-info" id="currentSessionInfo">
+                                <div>当前会话: <span id="currentSessionId">无</span></div>
+                                <div>对话轮数: <span id="conversationCount">0</span></div>
+                            </div>
+                            <div class="session-list" id="sessionList">
+                                <!-- 会话列表将在这里动态加载 -->
+                            </div>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-warning w-100" onclick="clearCurrentSession()">
+                                    <i class="bi bi-trash"></i> 清除当前会话
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 文档上传 -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <i class="bi bi-cloud-upload"></i> 文档上传
+                        </div>
+                        <div class="card-body">
+                            <form id="uploadForm">
+                                <input type="file" class="form-control mb-3" id="fileInput" 
+                                       accept=".pdf,.txt,.docx" multiple>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-upload"></i> 上传文档
+                                </button>
+                            </form>
+                            <div id="uploadStatus" class="mt-3"></div>
+                            
+                            <!-- 已上传文档列表 -->
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <small class="text-muted">📚 已上传文档</small>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="loadDocuments()">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </div>
+                                <div id="documentsList" class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                                    <div class="text-muted text-center">
+                                        <i class="bi bi-file-earmark"></i> 暂无文档
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 服务状态 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="bi bi-activity"></i> 服务状态
+                        </div>
+                        <div class="card-body">
+                            <div id="serviceStatus">
+                                <div class="text-muted">正在检查...</div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary w-100 mt-2" onclick="checkServiceStatus()">
+                                <i class="bi bi-arrow-clockwise"></i> 刷新状态
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主内容区 -->
+            <div class="col-lg-9">
+                <!-- 功能导航 -->
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card feature-card card-hover h-100" onclick="showTab('chat')">
+                            <div class="card-body text-center">
+                                <div class="feature-icon">💬</div>
+                                <h6>智能问答</h6>
+                                <small class="text-muted">支持上下文记忆</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card feature-card card-hover h-100" onclick="showTab('summary')">
+                            <div class="card-body text-center">
+                                <div class="feature-icon">📋</div>
+                                <h6>文档总结</h6>
+                                <small class="text-muted">智能提取要点</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card feature-card card-hover h-100" onclick="showTab('quiz')">
+                            <div class="card-body text-center">
+                                <div class="feature-icon">❓</div>
+                                <h6>练习题</h6>
+                                <small class="text-muted">自动生成题目</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card feature-card card-hover h-100" onclick="showTab('plan')">
+                            <div class="card-body text-center">
+                                <div class="feature-icon">📅</div>
+                                <h6>学习计划</h6>
+                                <small class="text-muted">个性化规划</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 标签页内容 -->
+                <div class="tab-content-area">
+                    <!-- 智能问答 -->
+                    <div id="chatTab" class="tab-content">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span><i class="bi bi-chat-text"></i> 智能问答</span>
+                                    <div>
+                                        <label class="form-check-label me-3">
+                                            <input type="checkbox" class="form-check-input" id="useDeepSeek"> 
+                                            使用 DeepSeek
+                                        </label>
+                                    </div>
+                                </div>
+                                <!-- 文档选择器 - 多选模式 -->
+                                <div class="card border-0" style="background: #f8f9fa;">
+                                    <div class="card-body py-2">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <small class="text-muted">📚 选择文档进行专题对话</small>
+                                            <div>
+                                                <button class="btn btn-sm btn-outline-primary me-1" onclick="selectAllDocuments()">
+                                                    <i class="bi bi-check2-all"></i> 全选
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary" onclick="clearDocumentSelection()">
+                                                    <i class="bi bi-x-circle"></i> 清除
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="documentCheckboxList" style="max-height: 120px; overflow-y: auto;">
+                                            <div class="text-muted text-center py-2">
+                                                <i class="bi bi-file-earmark"></i> 暂无可选文档
+                                            </div>
+                                        </div>
+                                        <!-- 已选择文档显示 -->
+                                        <div id="selectedDocumentsInfo" class="mt-2" style="display: none;">
+                                            <div class="alert alert-info alert-sm py-1 mb-0">
+                                                <i class="bi bi-files"></i> 已选择 <span id="selectedDocumentCount">0</span> 个文档：
+                                                <small id="selectedDocumentNames" class="d-block mt-1"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="chat-container" id="chatContainer">
+                                    <div class="text-muted text-center">
+                                        <i class="bi bi-chat-dots feature-icon"></i>
+                                        <p>开始您的智能对话吧！</p>
+                                        <small>系统会记住对话历史，提供更好的上下文理解</small>
+                                    </div>
+                                </div>
+                                <div class="loading-spinner" id="chatLoading">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">思考中...</span>
+                                    </div>
+                                    <p class="mt-2">AI正在思考...</p>
+                                </div>
+                                <form id="chatForm" class="mt-3">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="questionInput" 
+                                               placeholder="请输入您的问题..." autocomplete="off">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-send"></i> 发送
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 文档总结 -->
+                    <div id="summaryTab" class="tab-content" style="display: none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="bi bi-file-text"></i> 文档总结
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex gap-2 mb-3">
+                                    <button class="btn btn-success" onclick="generateSummary()">
+                                        <i class="bi bi-magic"></i> 生成总结
+                                    </button>
+                                    <label class="form-check-label ms-3">
+                                        <input type="checkbox" class="form-check-input" id="summaryDeepSeek"> 
+                                        使用 DeepSeek
+                                    </label>
+                                </div>
+                                <div id="summaryResponse"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 练习题生成 -->
+                    <div id="quizTab" class="tab-content" style="display: none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="bi bi-question-circle"></i> 练习题生成
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">题目数量</label>
+                                        <select class="form-select" id="questionCount">
+                                            <option value="3">3题</option>
+                                            <option value="5" selected>5题</option>
+                                            <option value="10">10题</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">AI模型</label>
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input" id="quizDeepSeek">
+                                            <label class="form-check-label">使用 DeepSeek</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-warning" onclick="generateQuiz()">
+                                    <i class="bi bi-lightbulb"></i> 生成练习题
+                                </button>
+                                <div id="quizResponse"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 学习计划 -->
+                    <div id="planTab" class="tab-content" style="display: none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="bi bi-calendar-check"></i> 学习计划制定
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">难度级别</label>
+                                        <select class="form-select" id="difficultyLevel">
+                                            <option value="easy">初级 - 适合入门学习</option>
+                                            <option value="medium" selected>中级 - 有一定基础</option>
+                                            <option value="hard">高级 - 需要深入掌握</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">AI模型</label>
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input" id="planDeepSeek">
+                                            <label class="form-check-label">使用 DeepSeek</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-info" onclick="generateStudyPlan()">
+                                    <i class="bi bi-diagram-3"></i> 制定学习计划
+                                </button>
+                                <div id="planResponse"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let currentSessionId = null;
+        let selectedDocumentIds = []; // 支持多文档选择
+        let selectedDocuments = {}; // 存储文档ID和名称的映射
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            newSession();
+            loadSessions();
+            checkServiceStatus();
+            loadDocuments();
+            showTab('chat');
+        });
+
+        // 生成新会话ID
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // 创建新会话
+        function newSession() {
+            currentSessionId = generateSessionId();
+            updateSessionStatus();
+            clearChatContainer();
+            addSystemMessage('新会话已创建，您可以开始提问了！');
+        }
+
+        // 更新会话状态显示
+        function updateSessionStatus() {
+            document.getElementById('currentSessionId').textContent = currentSessionId || '无';
+            document.getElementById('sessionId').textContent = currentSessionId || '未连接';
+            
+            if (currentSessionId) {
+                document.querySelector('.status-indicator').className = 'status-indicator status-online';
+            } else {
+                document.querySelector('.status-indicator').className = 'status-indicator status-offline';
+            }
+        }
+
+        // 清除当前会话
+        async function clearCurrentSession() {
+            if (!currentSessionId) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/conversation/${currentSessionId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    clearChatContainer();
+                    addSystemMessage('会话已清除');
+                    loadSessions();
+                }
+            } catch (error) {
+                console.error('清除会话失败:', error);
+            }
+        }
+
+        // 清空聊天容器
+        function clearChatContainer() {
+            const container = document.getElementById('chatContainer');
+            container.innerHTML = '';
+        }
+
+        // 添加系统消息
+        function addSystemMessage(message) {
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'alert alert-info';
+            messageDiv.innerHTML = `<i class="bi bi-info-circle"></i> ${message}`;
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 添加消息到聊天容器
+        function addMessage(content, isUser, metadata = {}) {
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            
+            if (isUser) {
+                messageDiv.className = 'message message-user';
+                messageDiv.innerHTML = `
+                    <div><strong>我:</strong></div>
+                    <div class="mt-1">${content}</div>
+                `;
+            } else {
+                messageDiv.className = 'message message-assistant';
+                const modelBadge = metadata.model_used ? 
+                    `<span class="model-badge model-${metadata.model_used.toLowerCase()}">${metadata.model_used}</span>` : '';
+                const contextInfo = metadata.context_used ? 
+                    '<small class="text-muted"><i class="bi bi-link-45deg"></i> 使用了上下文</small>' : '';
+                
+                messageDiv.innerHTML = `
+                    <div><strong>助手:</strong> ${modelBadge}</div>
+                    <div class="mt-1">${content.replace(/\n/g, '<br>')}</div>
+                    ${contextInfo ? `<div class="mt-1">${contextInfo}</div>` : ''}
+                `;
+            }
+            
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 显示/隐藏加载状态
+        function toggleLoading(show) {
+            document.getElementById('chatLoading').style.display = show ? 'block' : 'none';
+        }
+
+        // 显示标签页
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            document.getElementById(tabName + 'Tab').style.display = 'block';
+        }
+
+        // 加载文档列表 - 支持多选
+        async function loadDocuments() {
+            try {
+                const response = await fetch(`${API_BASE}/documents`);
+                const result = await response.json();
+                
+                const documentsList = document.getElementById('documentsList');
+                const documentCheckboxList = document.getElementById('documentCheckboxList');
+                
+                if (result.success && result.documents.length > 0) {
+                    // 更新智能问答的文档选择器（checkbox列表）
+                    let checkboxHtml = '';
+                    result.documents.forEach(doc => {
+                        const isChecked = selectedDocumentIds.includes(doc.document_id);
+                        selectedDocuments[doc.document_id] = doc.filename; // 保存映射
+                        
+                        checkboxHtml += `
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       id="doc_${doc.document_id}" 
+                                       value="${doc.document_id}"
+                                       ${isChecked ? 'checked' : ''}
+                                       onchange="onDocumentSelectionChange()">
+                                <label class="form-check-label" for="doc_${doc.document_id}">
+                                    📄 ${doc.filename}
+                                </label>
+                            </div>
+                        `;
+                    });
+                    documentCheckboxList.innerHTML = checkboxHtml;
+                    
+                    // 更新侧边栏的文档列表
+                    let documentsHtml = '';
+                    result.documents.forEach(doc => {
+                        const date = new Date(doc.created_at).toLocaleDateString();
+                        const sizeKB = Math.round(doc.total_chars / 1024);
+                        documentsHtml += `
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold text-truncate" style="max-width: 150px;" title="${doc.filename}">
+                                        📄 ${doc.filename}
+                                    </div>
+                                    <small class="text-muted">
+                                        ${doc.chunk_count} 块 · ${sizeKB}KB · ${date}
+                                    </small>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteDocument('${doc.document_id}')" title="删除文档">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    });
+                    documentsList.innerHTML = documentsHtml;
+                } else {
+                    // 无文档的情况
+                    documentCheckboxList.innerHTML = `
+                        <div class="text-muted text-center py-2">
+                            <i class="bi bi-file-earmark"></i> 暂无可选文档
+                        </div>
+                    `;
+                    documentsList.innerHTML = `
+                        <div class="text-muted text-center">
+                            <i class="bi bi-file-earmark"></i> 暂无文档
+                        </div>
+                    `;
+                }
+                
+                // 更新选择状态显示
+                updateSelectedDocumentsDisplay();
+                
+            } catch (error) {
+                console.error('加载文档列表失败:', error);
+                document.getElementById('documentCheckboxList').innerHTML = `
+                    <div class="text-danger text-center py-2">
+                        <i class="bi bi-exclamation-triangle"></i> 加载失败
+                    </div>
+                `;
+                document.getElementById('documentsList').innerHTML = `
+                    <div class="text-danger text-center">
+                        <i class="bi bi-exclamation-triangle"></i> 加载失败
+                    </div>
+                `;
+            }
+        }
+
+        // 多文档选择相关函数
+        function onDocumentSelectionChange() {
+            // 获取所有选中的文档
+            const checkboxes = document.querySelectorAll('#documentCheckboxList input[type="checkbox"]:checked');
+            selectedDocumentIds = Array.from(checkboxes).map(cb => cb.value);
+            
+            updateSelectedDocumentsDisplay();
+            
+            // 给用户提示
+            if (selectedDocumentIds.length > 0) {
+                const docNames = selectedDocumentIds.map(id => selectedDocuments[id]).join('、');
+                addSystemMessage(`📚 已选择 ${selectedDocumentIds.length} 个文档：${docNames}。AI将基于这些文档回答问题。`);
+            } else {
+                addSystemMessage('🧠 已切换到纯大模型模式，AI将基于训练知识回答问题。');
+            }
+        }
+        
+        function selectAllDocuments() {
+            const checkboxes = document.querySelectorAll('#documentCheckboxList input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = true);
+            onDocumentSelectionChange();
+        }
+        
+        function clearDocumentSelection() {
+            const checkboxes = document.querySelectorAll('#documentCheckboxList input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+            onDocumentSelectionChange();
+        }
+        
+        function updateSelectedDocumentsDisplay() {
+            const selectedInfo = document.getElementById('selectedDocumentsInfo');
+            const countSpan = document.getElementById('selectedDocumentCount');
+            const namesSpan = document.getElementById('selectedDocumentNames');
+            
+            if (selectedDocumentIds.length > 0) {
+                const docNames = selectedDocumentIds.map(id => selectedDocuments[id]).join('、');
+                countSpan.textContent = selectedDocumentIds.length;
+                namesSpan.textContent = docNames;
+                selectedInfo.style.display = 'block';
+            } else {
+                selectedInfo.style.display = 'none';
+            }
+        }
+
+        // 删除文档
+        async function deleteDocument(documentId) {
+            if (!confirm('确定要删除这个文档吗？')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/documents/${documentId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    loadDocuments(); // 刷新文档列表
+                    checkServiceStatus(); // 更新服务状态
+                    alert('文档删除成功');
+                } else {
+                    alert('删除失败：' + result.error);
+                }
+            } catch (error) {
+                console.error('删除文档失败:', error);
+                alert('删除失败：网络错误');
+            }
+        }
+
+        // 检查服务状态
+        async function checkServiceStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/service-status`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const status = result.service_status;
+                    const statusHtml = `
+                        <div class="mb-2">
+                            <small class="text-muted">AI服务:</small><br>
+                            <span class="status-indicator ${status.ai_service.openai_available ? 'status-online' : 'status-offline'}"></span>
+                            OpenAI: ${status.ai_service.openai_available ? '在线' : '离线'}<br>
+                            <span class="status-indicator ${status.ai_service.deepseek_available ? 'status-online' : 'status-offline'}"></span>
+                            DeepSeek: ${status.ai_service.deepseek_available ? '在线' : '离线'}
+                        </div>
+                        <div class="mb-2">
+                            <small class="text-muted">会话服务:</small><br>
+                            <span class="status-indicator ${status.session_service.redis_connected ? 'status-online' : 'status-warning'}"></span>
+                            ${status.session_service.storage_type === 'redis' ? 'Redis' : '内存'} 存储<br>
+                            活跃会话: ${status.session_service.active_sessions}
+                        </div>
+                        <div>
+                            <small class="text-muted">文档服务:</small><br>
+                            已上传文档: ${status.rag_service.document_count}
+                        </div>
+                    `;
+                    document.getElementById('serviceStatus').innerHTML = statusHtml;
+                }
+            } catch (error) {
+                document.getElementById('serviceStatus').innerHTML = 
+                    '<div class="text-danger">服务状态检查失败</div>';
+            }
+        }
+
+        // 加载会话列表
+        async function loadSessions() {
+            try {
+                const response = await fetch(`${API_BASE}/sessions`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const sessionList = document.getElementById('sessionList');
+                    sessionList.innerHTML = '';
+                    
+                    if (result.sessions.length === 0) {
+                        sessionList.innerHTML = '<div class="text-muted text-center">暂无会话</div>';
+                        return;
+                    }
+                    
+                    result.sessions.forEach(session => {
+                        const sessionDiv = document.createElement('div');
+                        sessionDiv.className = `session-item ${session.session_id === currentSessionId ? 'active' : ''}`;
+                        const date = new Date(session.last_activity * 1000).toLocaleString();
+                        sessionDiv.innerHTML = `
+                            <div class="d-flex justify-content-between">
+                                <small>${session.session_id.substr(0, 12)}...</small>
+                                <small>${session.conversation_count}轮</small>
+                            </div>
+                            <small class="text-muted">${date}</small>
+                        `;
+                        sessionDiv.onclick = () => switchSession(session.session_id);
+                        sessionList.appendChild(sessionDiv);
+                    });
+                }
+            } catch (error) {
+                console.error('加载会话列表失败:', error);
+            }
+        }
+
+        // 切换会话
+        async function switchSession(sessionId) {
+            currentSessionId = sessionId;
+            updateSessionStatus();
+            clearChatContainer();
+            
+            // 加载会话历史
+            try {
+                const response = await fetch(`${API_BASE}/session/${sessionId}`);
+                const result = await response.json();
+                
+                if (result.success && result.session_info.conversations) {
+                    result.session_info.conversations.forEach(conv => {
+                        addMessage(conv.question, true);
+                        addMessage(conv.answer, false, {
+                            model_used: conv.model_used,
+                            context_used: true
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error('加载会话历史失败:', error);
+            }
+            
+            loadSessions(); // 更新会话列表状态
+        }
+
+        // 文档上传
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+            
+            if (files.length === 0) {
+                alert('请选择文件');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div> 上传中...';
+            
+            let uploadResults = [];
+            
+            for (let i = 0; i < files.length; i++) {
+                const formData = new FormData();
+                formData.append('file', files[i]);
+                
+                try {
+                    const response = await fetch(`${API_BASE}/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        uploadResults.push(`<div class="alert alert-success alert-sm">✅ ${files[i].name} 上传成功</div>`);
+                    } else {
+                        uploadResults.push(`<div class="alert alert-danger alert-sm">❌ ${files[i].name} 上传失败: ${result.error || '未知错误'}</div>`);
+                    }
+                } catch (error) {
+                    uploadResults.push(`<div class="alert alert-danger alert-sm">❌ ${files[i].name} 网络错误</div>`);
+                }
+            }
+            
+            // 清除"上传中..."状态，显示最终结果
+            statusDiv.innerHTML = uploadResults.join('');
+            
+            // 重置文件输入框
+            fileInput.value = '';
+            
+            checkServiceStatus(); // 更新文档数量
+            loadDocuments(); // 刷新文档列表
+        });
+
+        // 智能问答
+        document.getElementById('chatForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const questionInput = document.getElementById('questionInput');
+            const question = questionInput.value.trim();
+            
+            if (!question) return;
+            
+            if (!currentSessionId) {
+                newSession();
+            }
+            
+            addMessage(question, true);
+            questionInput.value = '';
+            toggleLoading(true);
+            
+            try {
+                const useDeepSeek = document.getElementById('useDeepSeek').checked;
+                const response = await fetch(`${API_BASE}/ask`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question: question,
+                        use_deepseek: useDeepSeek,
+                        session_id: currentSessionId,
+                        document_ids: selectedDocumentIds // 传递选中的多个文档ID
+                    })
+                });
+                
+                const result = await response.json();
+                toggleLoading(false);
+                
+                if (result.success) {
+                    addMessage(result.answer, false, {
+                        model_used: result.model_used,
+                        context_used: result.context_used
+                    });
+                    loadSessions(); // 更新会话列表
+                } else {
+                    addMessage(`抱歉，回答失败：${result.error}`, false);
+                }
+            } catch (error) {
+                toggleLoading(false);
+                addMessage('网络错误，请稍后重试', false);
+            }
+        });
+
+        // 生成总结
+        async function generateSummary() {
+            const useDeepSeek = document.getElementById('summaryDeepSeek').checked;
+            const responseDiv = document.getElementById('summaryResponse');
+            
+            responseDiv.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div><p class="mt-2">正在生成总结...</p></div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/summary?use_deepseek=${useDeepSeek}`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    responseDiv.innerHTML = `
+                        <div class="response-box">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5>📋 文档总结</h5>
+                                <span class="model-badge model-${result.model_used.toLowerCase()}">${result.model_used}</span>
+                            </div>
+                            <div>${result.summary.replace(/\n/g, '<br>')}</div>
+                            <hr>
+                            <small class="text-muted">基于 ${result.document_count} 个文档生成</small>
+                        </div>
+                    `;
+                } else {
+                    responseDiv.innerHTML = `<div class="alert alert-warning">${result.error}</div>`;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = '<div class="alert alert-danger">网络错误</div>';
+            }
+        }
+
+        // 生成练习题
+        async function generateQuiz() {
+            const questionCount = document.getElementById('questionCount').value;
+            const useDeepSeek = document.getElementById('quizDeepSeek').checked;
+            const responseDiv = document.getElementById('quizResponse');
+            
+            responseDiv.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div><p class="mt-2">正在生成练习题...</p></div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/quiz`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question_count: parseInt(questionCount),
+                        use_deepseek: useDeepSeek
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.quiz.questions) {
+                    let quizHtml = `
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5>❓ 练习题</h5>
+                            <span class="model-badge model-${result.model_used.toLowerCase()}">${result.model_used}</span>
+                        </div>
+                    `;
+                    
+                    result.quiz.questions.forEach((q, index) => {
+                        quizHtml += `<div class="quiz-container">
+                            <h6>题目 ${index + 1}：${q.question}</h6>`;
+                        
+                        if (q.type === 'choice' && q.options) {
+                            quizHtml += '<div class="mt-2">';
+                            q.options.forEach((option, optIndex) => {
+                                quizHtml += `<div class="quiz-option" onclick="selectOption(this, '${q.correct_answer}', '${option.charAt(0)}')">${option}</div>`;
+                            });
+                            quizHtml += '</div>';
+                        } else if (q.type === 'judge') {
+                            quizHtml += `
+                                <div class="mt-2">
+                                    <div class="quiz-option" onclick="selectOption(this, '${q.correct_answer}', 'true')">A. 正确</div>
+                                    <div class="quiz-option" onclick="selectOption(this, '${q.correct_answer}', 'false')">B. 错误</div>
+                                </div>
+                            `;
+                        } else {
+                            quizHtml += `<div class="mt-2"><strong>参考答案：</strong>${q.correct_answer}</div>`;
+                        }
+                        
+                        quizHtml += `<div class="mt-2"><small class="text-muted"><strong>解释：</strong>${q.explanation}</small></div></div>`;
+                    });
+                    
+                    responseDiv.innerHTML = quizHtml;
+                } else {
+                    responseDiv.innerHTML = `<div class="alert alert-warning">${result.error || '练习题生成失败'}</div>`;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = '<div class="alert alert-danger">网络错误</div>';
+            }
+        }
+
+        // 选择题目选项
+        function selectOption(element, correctAnswer, selectedAnswer) {
+            // 重置同级选项
+            const siblings = element.parentNode.querySelectorAll('.quiz-option');
+            siblings.forEach(sibling => {
+                sibling.classList.remove('selected', 'correct', 'incorrect');
+            });
+            
+            // 标记选中
+            element.classList.add('selected');
+            
+            // 显示结果
+            setTimeout(() => {
+                if (selectedAnswer === correctAnswer) {
+                    element.classList.add('correct');
+                } else {
+                    element.classList.add('incorrect');
+                    // 显示正确答案
+                    siblings.forEach(sibling => {
+                        if (sibling.textContent.startsWith(correctAnswer)) {
+                            sibling.classList.add('correct');
+                        }
+                    });
+                }
+            }, 100);
+        }
+
+        // 生成学习计划
+        async function generateStudyPlan() {
+            const difficulty = document.getElementById('difficultyLevel').value;
+            const useDeepSeek = document.getElementById('planDeepSeek').checked;
+            const responseDiv = document.getElementById('planResponse');
+            
+            responseDiv.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div><p class="mt-2">正在制定学习计划...</p></div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/study-plan`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        difficulty: difficulty,
+                        use_deepseek: useDeepSeek
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    responseDiv.innerHTML = `
+                        <div class="response-box">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5>📅 学习计划</h5>
+                                <span class="model-badge model-${result.model_used.toLowerCase()}">${result.model_used}</span>
+                            </div>
+                            <div>${result.study_plan.replace(/\n/g, '<br>')}</div>
+                            <hr>
+                            <small class="text-muted">难度级别：${result.difficulty} | 基于 ${result.document_count} 个文档</small>
+                        </div>
+                    `;
+                } else {
+                    responseDiv.innerHTML = `<div class="alert alert-warning">${result.error}</div>`;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = '<div class="alert alert-danger">网络错误</div>';
+            }
+        }
+
+        // 定期刷新会话状态
+        setInterval(() => {
+            if (currentSessionId) {
+                loadSessions();
+            }
+        }, 30000); // 每30秒刷新一次
+    </script>
+</body>
+</html> 
+</html> 
