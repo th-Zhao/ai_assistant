@@ -65,7 +65,7 @@
 ```bash
 # 克隆项目
 git clone <repository-url>
-cd intelligent-study-assistant
+cd ai_assistant
 
 # 一键启动（自动创建环境、安装依赖、启动服务）
 python start_conda.py
